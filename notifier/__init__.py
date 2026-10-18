@@ -1,0 +1,1 @@
+"""Public giveaway monitoring service."""

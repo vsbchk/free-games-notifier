@@ -1,26 +1,9 @@
-import subprocess
-import sys
-from pathlib import Path
+"""Offline tests: never delete state or send notifications."""
 
-
-ROOT = Path(__file__).resolve().parent
-SCRIPTS = ["delete_state_json.py", "epic.PY", "steam.py"]
-
-
-def run_script(script_name):
-    script_path = ROOT / script_name
-    print(f"Running {script_name}...")
-    result = subprocess.run([sys.executable, str(script_path)], cwd=ROOT)
-    if result.returncode != 0:
-        raise SystemExit(f"{script_name} failed with exit code {result.returncode}")
-    print(f"Finished {script_name}.")
-
-
-def main():
-    for script_name in SCRIPTS:
-        run_script(script_name)
-    print("Test runner completed successfully.")
-
+import unittest
 
 if __name__ == "__main__":
-    main()
+    result = unittest.TextTestRunner(verbosity=2).run(
+        unittest.defaultTestLoader.discover("tests")
+    )
+    raise SystemExit(not result.wasSuccessful())

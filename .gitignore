@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+secrets.json
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+data/
+*.sqlite3*
+*.db*
+.wheels/

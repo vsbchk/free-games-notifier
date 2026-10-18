@@ -1,70 +1,37 @@
-name: Free Games Auto Notifier
-
+name: Build and publish container
 on:
-  schedule:
-    - cron: "0 */6 * * *"
-  workflow_dispatch:
-
+  push:
+    branches: [main]
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: ghcr-main
+  cancel-in-progress: false
 jobs:
-  notify:
+  test:
+    uses: ./.github/workflows/tester.yml
+  publish:
+    needs: test
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
-
-      - name: Run Epic Games notifier
-        env:
-          EMAIL: ${{ secrets.EMAIL }}
-          PASSWORD: ${{ secrets.PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TO_EMAIL: ${{ secrets.TO_EMAIL }}
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
-          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
-          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-          WHATSAPP_TO: ${{ secrets.WHATSAPP_TO }}
-          WHATSAPP_API_VERSION: ${{ secrets.WHATSAPP_API_VERSION }}
-        run: python epic.PY
-
-      - name: Run Steam notifier
-        env:
-          EMAIL: ${{ secrets.EMAIL }}
-          PASSWORD: ${{ secrets.PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TO_EMAIL: ${{ secrets.TO_EMAIL }}
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
-          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
-          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-          WHATSAPP_TO: ${{ secrets.WHATSAPP_TO }}
-          WHATSAPP_API_VERSION: ${{ secrets.WHATSAPP_API_VERSION }}
-        run: python steam.py
-
-      - name: Refresh README
-        run: python generate_readme.py
-
-      - name: Commit and push updated files
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add README.md free.json free-steam.json
-
-          git diff --cached --quiet || (
-            git commit -m "Update free games state and README [skip ci]"
-            git push
-          )
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64,linux/amd64
+          push: true
+          tags: |
+            ghcr.io/vsbchk/free-games-notifier:latest
+            ghcr.io/vsbchk/free-games-notifier:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,325 +1,121 @@
-# Free Games Auto Notifier
+# Free Games Notifier — Docker / Raspberry Pi 5
 
-> Automatically tracks **Epic Games** and **Steam** free game offers and sends you a beautiful HTML email notification whenever new free games appear — powered by GitHub Actions.
+Постоянный Python-сервис для Linux ARM64 и AMD64. Проверяет публичные раздачи Epic Games Store и Steam и отправляет каждую подтверждённую игру одновременно в одну Telegram-группу и один Discord-канал. Вход в игровые аккаунты и автоматическое получение игр не используются.
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Automated-success?logo=github-actions&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Schedule](https://img.shields.io/badge/Runs%20Every-6%20Hours-orange?logo=clockify&logoColor=white)
-![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
-![Discord](https://img.shields.io/badge/Discord-Bot-5865F2?logo=discord&logoColor=white)
-![WhatsApp](https://img.shields.io/badge/WhatsApp-Cloud%20API-25D366?logo=whatsapp&logoColor=white)
-![Repo Views](https://githubbadge.mario22623.workers.dev/jaixmario/free-games-notifier?label=repo%20views&color=%23c70000&labelColor=%23000000&textColor=%23ffffff&countColor=%23ffffff&fontSize=11&format=short)
-<details>
-<summary><strong>Version</strong></summary>
+## Запуск в Dockge на UmbrelOS
 
-Current version: **2.7**
+1. После вашего push в `main` GitHub Actions протестирует проект и опубликует `ghcr.io/vsbchk/free-games-notifier:latest` для `linux/arm64` и `linux/amd64`. До первой успешной публикации этот образ может быть недоступен. В настройках GHCR установите видимость пакета **Public**, чтобы Raspberry Pi мог скачивать его без токена. Workflow использует только встроенный `GITHUB_TOKEN` с `packages: write`.
+2. В Dockge создайте один stack `free-games-notifier`, вставьте содержимое `compose.yaml` и заполните редактор `.env` по образцу ниже.
+3. Нажмите Deploy. Проверьте логи: `Service started`, затем результат проверки каждого магазина. Успех доставки отмечается `delivery confirmed`. Секреты в логах отсутствуют.
+4. Обновление: Pull / Redeploy в Dockge. Состояние остаётся в named volume `notifier-state` (Docker добавляет префикс имени stack).
 
-Version 2.7 focuses on cleaner test runs, safer JSON state handling, and quieter notifications when old offers expire.
-
-</details>
-
-<details>
-<summary><strong>Change Log</strong></summary>
-
-### v2.7
-
-- Added `delete_state_json.py` to remove only `free.json` and `free-steam.json` for testing.
-- Added `test_runner.py` to delete saved JSON state first, then run `epic.PY` and `steam.py`.
-- Added manual tester workflow at `.github/workflows/tester.yml`.
-- Updated notification logic so expired or removed offers update JSON silently without sending alerts.
-- Updated README and site docs with the new testing flow, workflow tree, and state behavior.
-
-</details>
-
-<!-- README_AUTO_SECTION:START -->
-## Free Games Right Now
-
-Last updated: **18 Oct 2026, 08:50 PM IST**  
-Source: Epic fallback from saved state, Steam live data
-
-### Epic Games
-- **Agent A: A puzzle in disguise** - free until `22 Oct 2026, 08:30 PM IST` ([Claim](https://store.epicgames.com/en-US/p/agent-a-a-puzzle-in-disguise-42fe5f))
-- **Bad Cheese** - free until `22 Oct 2026, 08:30 PM IST` ([Claim](https://store.epicgames.com/en-US/p/bad-cheese-4256d9))
-
-### Upcoming on Epic
-- **Home - A Unique Horror Adventure** - starts `22 Oct 2026, 08:30 PM IST` ([Store page](https://store.epicgames.com/en-US/p/home-19212a))
-- **Sker Ritual** - starts `22 Oct 2026, 08:30 PM IST` ([Store page](https://store.epicgames.com/en-US/p/sker-ritual-aac702))
-
-### Steam
-- **Battlefield™ 6** - Free Weekend ([Open](https://store.steampowered.com/app/2807960))
-- **Gear.Club Unlimited 3 - Gear.Club Signature Pack** - Free to Keep ([Open](https://store.steampowered.com/app/4114140/GearClub_Unlimited_3__GearClub_Signature_Pack/?snr=1_7_7_2300_150_1))
-- **Squad Weapon Skins - Recon Team Pack** - Free to Keep ([Open](https://store.steampowered.com/app/4841320/Squad_Weapon_Skins__Recon_Team_Pack/?snr=1_7_7_2300_150_1))
-- **Stranded Deep** - Free Weekend ([Open](https://store.steampowered.com/app/313120))
-- **Voidtrain - Big Catch** - Free to Keep ([Open](https://store.steampowered.com/app/5007040/Voidtrain__Big_Catch/?snr=1_7_7_2300_150_1))
-<!-- README_AUTO_SECTION:END -->
-
----
-
-## Features
-
-- Epic Games support for current and upcoming free promotions
-- Steam support for free-to-keep deals and free weekend events
-- HTML email notifications
-- Telegram bot notifications with per-game photo cards
-- **Discord bot notifications with rich embeds** (title, image, dates, store link)
-- **WhatsApp Cloud API notifications** with summary and per-game text messages
-- Change detection to avoid duplicate notifications
-- Expired or removed offers update JSON state silently without sending notifications
-- Test runner for clearing JSON state and running both notifiers on demand
-- Automatic README refresh on every scheduled workflow run
-- GitHub Actions automation every 6 hours
-
----
-
-## Project Structure
-
-```text
-free-games-notifier/
-|-- epic.PY
-|-- steam.py
-|-- start.py
-|-- test_runner.py
-|-- delete_state_json.py
-|-- generate_readme.py
-|-- whatsapp.py
-|-- config.json
-|-- secrets.json
-|-- free.json
-|-- free-steam.json
-|-- index.html
-|-- SITE/
-|   |-- docs.html
-|   |-- site.css
-|   `-- site.js
-`-- .github/
-    `-- workflows/
-        |-- main.yml
-        `-- tester.yml
+```env
+TELEGRAM_BOT_TOKEN=ВАШ_ТОКЕН_ОТ_BOTFATHER
+TELEGRAM_CHAT_ID=-1001234567890
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/ID/TOKEN
+CHECK_INTERVAL_MINUTES=60
+NOTIFY_EXISTING_ON_START=true
+TZ=Europe/Warsaw
+STORE_COUNTRY=PL
 ```
 
----
+Замените первые три значения реальными. Добавьте Telegram-бота в группу и разрешите отправку сообщений/фото; обычно ID супергруппы начинается с `-100`. Создайте Discord Webhook в настройках нужного канала и скопируйте полный URL. Discord Bot Token не нужен.
 
-## Getting Started
+| Переменная | Обязательна | Значение / назначение |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | Да | Токен одного Telegram-бота |
+| `TELEGRAM_CHAT_ID` | Да | Один числовой ID группы или `@username`, без списка через запятую |
+| `DISCORD_WEBHOOK_URL` | Да | HTTPS URL `discord.com/api/webhooks/ID/TOKEN`, без query-параметров |
+| `CHECK_INTERVAL_MINUTES` | Нет | `60`; целое число 1–1440, ожидание между циклами |
+| `NOTIFY_EXISTING_ON_START` | Нет | `true` или `false`; только для первого успешного опроса каждого магазина при новой базе |
+| `TZ` | Нет | `Europe/Warsaw`; часовой пояс IANA для дат, можно `Europe/Moscow` |
+| `STORE_COUNTRY` | Нет | `PL`; двухбуквенный код региона магазина, например `US`. Часовой пояс не меняет регион магазина |
+| `STATE_DIR` | Нет | В Compose фиксирован `/data`; для локального Python по умолчанию `data` |
 
-### 1. Clone the repository
+Пустые обязательные переменные и некорректные настройки вызывают понятную ошибку без печати значения. Compose подставляет значения по умолчанию для пустых необязательных переменных; прямой запуск Python отвергает явно заданные пустые значения.
 
-```bash
-git clone https://github.com/your-username/free-games-notifier.git
-cd free-games-notifier
+Обычный Docker Compose после публикации:
+
+```sh
+cp .env.example .env
+# Заполните .env, ограничьте доступ к нему (например chmod 600 .env).
+docker compose up -d
+docker compose logs -f --tail=100
+docker compose pull
+docker compose up -d
 ```
 
-### 2. Install dependencies
+Локальная сборка вместо GHCR, если Docker установлен:
 
-```bash
-pip install requests beautifulsoup4
+```sh
+docker build -t ghcr.io/vsbchk/free-games-notifier:latest .
+docker compose up -d --pull never
 ```
 
-### 3. Add GitHub secrets
+Контейнер работает как UID/GID `10001:10001`, без root, с read-only корневой ФС, без capabilities и открытых портов. Новый named volume получает права каталога `/data` из образа. При замене на bind mount заранее обеспечьте права UID 10001. Не запускайте несколько реплик и не используйте одну базу для разных получателей.
 
-Create these repository secrets in `Settings -> Secrets and variables -> Actions`:
+## Источники и фильтрация
 
-| Secret Name | Description |
-|-------------|-------------|
-| `EMAIL` | Sender Gmail address |
-| `PASSWORD` | Gmail App Password |
-| `TO_EMAIL` | Recipient email address or comma-separated email addresses |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather |
-| `TELEGRAM_CHAT_ID` | Telegram chat ID or comma-separated chat IDs |
-| `DISCORD_BOT_TOKEN` | Discord bot token from the Developer Portal |
-| `DISCORD_CHANNEL_ID` | Discord channel ID or comma-separated channel IDs |
-| `WHATSAPP_ACCESS_TOKEN` | Meta WhatsApp Cloud API bearer token |
-| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Cloud API phone number ID |
-| `WHATSAPP_TO` | Recipient number or comma-separated numbers in international format |
-| `WHATSAPP_API_VERSION` | Optional Graph API version such as `v25.0` |
+**Epic:** сохранён публичный endpoint `freeGamesPromotions` и подход к поиску ссылок/обложек из `epic.PY`. Принимаются только `BASE_GAME` с положительной обычной ценой, нулевой текущей ценой, активным временным окном и нулевой ценой в настройках промо. Будущие акции не рассылаются до начала. DLC, демо и постоянно бесплатные игры исключаются. Проверяются все группы промо, а не только первая. Ссылка строится по slug, без выдуманных страниц.
 
-Use a Gmail App Password, not your normal account password. Each notification type is independent — you can enable only the ones you need via `config.json`.
+**Steam:** сохранён поиск `maxprice=free&specials=1` из `steam.py`, добавлены пагинация и проверка каждой игры через публичный `appdetails` и страницу покупки на английском. Нужны одновременно скидка `-100%`, тип `game`, отсутствие признака `is_free`, положительная обычная цена и нулевая текущая, плюс явное `Free to keep` / `Keep it forever` в блоке покупки. Free weekend, play for free, trial и временный доступ исключаются. Отзывы и описание издателя не считаются подтверждением. Старый сборщик бесплатных выходных не используется.
 
-### 4. Control notification types with `config.json`
+Данные зависят от `STORE_COUNTRY`. Это регион запроса, а не обход региональных ограничений. Публичные endpoints и HTML не имеют гарантии стабильности. При изменении разметки, ошибке HTTP/JSON или age gate неполный результат магазина не сохраняется как успешный снимок. Второй магазин продолжает работу. При ошибке не используются старые `free.json` / `free-steam.json` и не создаются предположительные уведомления.
 
-```json
-{
-  "secrets": {
-    "use_hardcoded_secrets": false,
-    "secrets_file": "secrets.json"
-  },
-  "notifications": {
-    "email": true,
-    "telegram": true,
-    "discord": true,
-    "whatsapp": false
-  }
-}
-```
+## Доставка, повторы и состояние
 
-Set any value to `false` to skip that channel entirely — no credentials required for disabled channels.
+- Первая проверка — сразу при старте; следующая — через `CHECK_INTERVAL_MINUTES` после окончания цикла. Источники опрашиваются параллельно.
+- На игру отправляется одна карточка в каждый канал: название, магазин, ссылка, обычная цена, окончание акции (если доступно), обложка (если доступна).
+- Telegram: Bot API `sendPhoto` / `sendMessage`; при явном HTTP 400 на фото выполняется текстовый fallback. После сетевого timeout немедленного fallback нет, поскольку фото могло уже дойти.
+- Discord: Webhook с embed и `wait=true`; успех засчитывается только после подтверждения с ID сообщения. Упоминания отключены.
+- Доставка в Telegram и Discord выполняется параллельно. Результаты фиксируются независимо, сразу после подтверждения каждого канала.
+- SQLite `/data/state.sqlite3` в volume хранит увиденные акции, отдельно квитанции двух каналов, факт первичной инициализации магазинов и ограничения частоты. WAL и `synchronous=FULL` обеспечивают транзакционную запись. OS-блокировка `service.lock` запрещает второму процессу использовать тот же каталог; после завершения/сбоя она освобождается автоматически. При повреждении базы сервис останавливается; база не сбрасывается молча.
+- Ошибки доставки повторяются в следующем цикле только после нового подтверждения актуальности акции. Успешный канал повторно не вызывается. HTTP 429 сохраняет `retry_after`; раньше этого срока канал не вызывается, в том числе после перезапуска. Если магазин недоступен или акция закончилась, рассылка откладывается/не выполняется.
+- `NOTIFY_EXISTING_ON_START=false` записывает текущие акции первого успешного опроса каждого магазина как пропущенные. Только вновь появившиеся акции рассылаются. Режим сохраняется после перезапуска; смена флага не возвращает пропущенные акции. При первоначальной ошибке магазина его первый успешный опрос позднее становится исходным снимком.
+- Epic идентифицируется по namespace, offer ID и началу акции. Steam — по app ID: одной игре Steam соответствует одно уведомление за срок жизни базы. Это намеренно исключает дубли при изменении/отсутствии даты окончания.
+- SIGTERM/SIGINT прерывает ожидание и запрещает новые отправки; текущие HTTP-запросы имеют timeout. Compose даёт 90 секунд на завершение. Состояние подтверждённых отправок закрывается корректно.
 
-### 5. Optional JSON secrets file
+При обычном перезапуске подтверждённые уведомления не повторяются. Абсолютная гарантия exactly-once недоступна: если мессенджер принял сообщение, но ответ потерян либо процесс погиб до записи квитанции, повтор возможен. Эти API не предоставляют общей транзакции с SQLite. Сервис предпочитает повторить неподтверждённую доставку, а не молча потерять её.
 
-Set this in `config.json`:
+Сохраняйте имя stack/volume при обновлениях. `docker compose down` сохраняет volume; **`down -v` удаляет историю и может вызвать повторную рассылку**. Для резервного копирования остановите stack и скопируйте весь каталог volume, затем запустите снова. Старые JSON-снимки не импортируются: они не содержат достоверного раздельного статуса доставки.
 
-```json
-{
-  "secrets": {
-    "use_hardcoded_secrets": true,
-    "secrets_file": "secrets.json"
-  }
-}
-```
+## Миграция старого проекта
 
-Then fill `secrets.json` with your local values:
+- `start.py` теперь запускает постоянный сервис из `notifier/`.
+- `test_runner.py` запускает только offline-тесты; он больше не удаляет состояние и не отправляет сообщения.
+- `.github/workflows/main.yml` заменён сборкой/публикацией образа при push в main. `.github/workflows/tester.yml` выполняет только тесты/проверки при PR, вручную и как reusable workflow. Расписания рассылок и авто-коммиты удалены, секреты Telegram/Discord в Actions не используются.
+- Старые `epic.PY`, `steam.py`, `whatsapp.py`, `generate_readme.py`, `delete_state_json.py`, сайт и JSON-снимки оставлены как legacy. Они не входят в Docker-образ. **Не запускайте старые notifier-скрипты одновременно с сервисом**: они имеют прежнюю семантику уведомлений. `delete_state_json.py` не затрагивает новую SQLite-базу.
+- `config.json` сохранён без изменений: он управлял email/Telegram/Discord Bot/WhatsApp в старых скриптах. Новый сервис его не читает; оба нужных канала обязательны, email и WhatsApp не используются.
+- Проверенный `secrets.json` содержал пустые credentials и только непустую версию WhatsApp API. Он переименован в `secrets.example.json`. Настоящий `secrets.json`, `.env`, база и виртуальное окружение исключены из Git. В Docker используется allowlist файлов: секреты и legacy-код не попадут даже в build context.
+- Старые инструкции сохранены в `docs/legacy-README.md` исключительно для истории. Для текущего запуска используйте этот README. Если ранее реальные токены уже были опубликованы, удаление файла из рабочей версии не очищает историю Git — такие токены нужно заменить.
 
-```json
-{
-  "email": {
-    "email": "you@gmail.com",
-    "password": "your-app-password",
-    "to_email": "first@example.com,second@example.com"
-  },
-  "telegram": {
-    "bot_token": "123456:telegram-bot-token",
-    "chat_id": "123456789"
-  },
-  "discord": {
-    "bot_token": "YOUR_DISCORD_BOT_TOKEN",
-    "channel_id": "YOUR_CHANNEL_ID"
-  },
-  "whatsapp": {
-    "access_token": "EAAG...",
-    "phone_number_id": "1126873913833051",
-    "to": "919989148967",
-    "api_version": "v25.0"
-  }
-}
-```
+## Локальный запуск и проверки
 
-Email, Telegram, Discord, and WhatsApp all support multiple targets separated by commas. Email delivery is capped at 30 recipients per run.
+Python 3.11+ (образ использует 3.12). Браузер, Selenium, Playwright, компилятор и SDK игровых аккаунтов не нужны. Все зависимости закреплены в `requirements.txt`.
 
----
-
-## How It Works
-
-### `epic.PY`
-
-1. Calls the Epic Games promotions API.
-2. Extracts current and upcoming free games.
-3. Formats dates in IST.
-4. Compares the latest JSON snapshot with `free.json`.
-5. Sends email, Telegram, Discord, and/or WhatsApp alerts only when new offers appear.
-6. Saves removed or expired offers to `free.json` silently without sending alerts.
-
-### `steam.py`
-
-1. Scrapes Steam search results for discounted free offers.
-2. Checks Steam featured categories for free weekend events.
-3. Compares the latest JSON snapshot with `free-steam.json`.
-4. Sends email, Telegram, Discord, and/or WhatsApp alerts only when new offers appear.
-5. Saves removed or expired offers to `free-steam.json` silently without sending alerts.
-
-#### Discord notifications
-
-Both scripts post to Discord via the REST API (`POST /channels/{id}/messages`) using a bot token. Each run sends:
-
-- A **summary message** with the total count of free games.
-- One **rich embed per game** containing the title (linked to the store page), cover image, and relevant dates or offer type — colour-coded by category.
-
-#### Telegram notifications
-
-Both scripts send Telegram updates using the Bot API. Each run sends:
-
-- A short **summary message**.
-- One **formatted message or photo card per game** with clickable links.
-- Delivery to one or many chats when `chat_id` contains comma-separated values.
-
-#### WhatsApp notifications
-
-Both scripts send WhatsApp updates through the Meta Cloud API. Each run sends:
-
-- A short **summary message**.
-- One **image message with caption and store link** when artwork is available, or a text fallback when it is not.
-- Delivery to one or many recipients when `WHATSAPP_TO` contains comma-separated values.
-
-Free-form text messages work inside WhatsApp's customer service window. For messages outside that window, Meta requires approved templates.
-GitHub Actions may have WhatsApp API requests blocked or fail unpredictably in some environments, so WhatsApp notifications are best run locally or from a VPS.
-
-### `generate_readme.py`
-
-1. Fetches the latest Epic and Steam game data.
-2. Rebuilds the auto-managed section at the top of this README.
-3. Falls back to saved state files if a live fetch fails.
-
-### Testing helpers
-
-- `delete_state_json.py` removes only `free.json` and `free-steam.json`.
-- `test_runner.py` runs `delete_state_json.py`, then `epic.PY`, then `steam.py`.
-- These helpers are for testing reset behavior. A deleted JSON file means there is no previous state to compare against, so current offers may be treated as new.
-
----
-
-## GitHub Actions Workflow
-
-Note: GitHub Actions is fine for scraping and README refreshes, but WhatsApp API delivery may be blocked there. Use WhatsApp notifications locally or on a VPS for more reliable sending.
-
-The main workflow `.github/workflows/main.yml` runs on:
-
-- Schedule: every 6 hours with `0 */6 * * *`
-- Manual trigger: `workflow_dispatch`
-
-Each run:
-
-1. Installs dependencies.
-2. Runs `epic.PY`.
-3. Runs `steam.py`.
-4. Runs `generate_readme.py`.
-5. Commits updated state files and `README.md` if anything changed.
-
-The tester workflow `.github/workflows/tester.yml` is manual only. It clears `free.json` and `free-steam.json` first, then runs the Epic and Steam notifiers and refreshes the README. Use it only when you intentionally want a clean test run.
-
----
-
-## Run Manually
-
-Run both notifier scripts with one command:
-
-```powershell
+```sh
+python -m venv .venv
+# Linux: source .venv/bin/activate
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+python -m unittest discover -s tests -v
+ruff check notifier tests start.py test_runner.py
+python -m compileall -q notifier tests start.py test_runner.py
+pip check
+# Задайте переменные окружения, затем:
 python start.py
 ```
 
-Run the testing flow that clears JSON state first:
+Прямой запуск Python не загружает `.env` автоматически. `.env` читает Docker Compose/Dockge. Offline-тесты подменяют HTTP и отправителей, не требуют реальных токенов и не отправляют сообщения.
 
-```powershell
-python test_runner.py
-```
+Проверено при адаптации: 36 unit-тестов, Ruff, compileall, pip check, разбор YAML и контракт Compose/workflows; загрузка всех runtime wheels для CPython 3.12 `manylinux2014_aarch64`. Выполнен read-only live-опрос магазинов: Epic вернул 2 подходящие акции, Steam 0. Это не статический список рекомендаций и не гарантия наличия этих акций позднее.
 
-If you want to run with custom environment variables locally:
+Docker на машине разработки отсутствует: реальная сборка образа, `docker compose config`, запуск на ARM64 и доставка в реальные каналы здесь не выполнялись. CI проверит Compose и сборку после вашего push. Коммитов, push, публикации образа и развёртывания при адаптации не выполнялось.
 
-```powershell
-$env:EMAIL="you@gmail.com"
-$env:PASSWORD="your-app-password"
-$env:TO_EMAIL="first@example.com,second@example.com"
-$env:TELEGRAM_BOT_TOKEN="123456:telegram-bot-token"
-$env:TELEGRAM_CHAT_ID="123456789"
-$env:DISCORD_BOT_TOKEN="your-discord-bot-token"
-$env:DISCORD_CHANNEL_ID="your-channel-id"
-$env:WHATSAPP_ACCESS_TOKEN="EAAG..."
-$env:WHATSAPP_PHONE_NUMBER_ID="123456789"
-$env:WHATSAPP_TO="919999999999"
-$env:WHATSAPP_API_VERSION="v25.0"
+## Известные ограничения
 
-python start.py
-python generate_readme.py
-```
+Строгий Steam-фильтр может пропускать реальные раздачи при отсутствии цены, нетипичном тексте, возрастном/региональном ограничении или отсутствии акции в поиске. Повторная раздача той же Steam-игры не уведомляется; приоритет — отсутствие дублей. Дата Steam показывается только при наличии машиночитаемого срока в блоке покупки, иначе «Не указана». Для обложек возможны отказы внешнего CDN. Проверка раз в час может пропустить очень короткую акцию. Для доставки необходимы сеть и права бота/webhook. После смены получателя прежние квитанции остаются действительными: автоматического повтора в новый канал нет. Запускайте один экземпляр с локальным Docker volume.
 
----
+Источники API/поведения: [Telegram Bot API](https://core.telegram.org/bots/api), [Discord Webhooks](https://docs.discord.com/developers/resources/webhook), [Steam Free Weekends](https://partner.steamgames.com/doc/marketing/discounts/freeweekends), [Docker multi-platform builds](https://docs.docker.com/build/ci/github-actions/multi-platform/).
 
-## Security Notes
-
-- Credentials are never committed to the repository.
-- Secrets are injected at runtime through GitHub Actions.
-- State files are JSON snapshots containing signatures plus game metadata like title, link, image, dates, and offer type.
-
----
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
+Лицензия: MIT, см. `LICENSE`.

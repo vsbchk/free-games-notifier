@@ -1,0 +1,31 @@
+services:
+  free-games-notifier:
+    image: ghcr.io/vsbchk/free-games-notifier:latest
+    restart: unless-stopped
+    init: true
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:?Set TELEGRAM_CHAT_ID}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:?Set DISCORD_WEBHOOK_URL}
+      CHECK_INTERVAL_MINUTES: ${CHECK_INTERVAL_MINUTES:-60}
+      NOTIFY_EXISTING_ON_START: ${NOTIFY_EXISTING_ON_START:-true}
+      TZ: ${TZ:-Europe/Warsaw}
+      STORE_COUNTRY: ${STORE_COUNTRY:-PL}
+      STATE_DIR: /data
+    volumes:
+      - notifier-state:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  notifier-state:
